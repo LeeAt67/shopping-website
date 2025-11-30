@@ -10,8 +10,6 @@ async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
         headers: {
           'Content-Type': 'application/json',
         },
-        // 添加超时设置
-        signal: AbortSignal.timeout(10000), // 10秒超时
       });
       
       if (response.ok) {

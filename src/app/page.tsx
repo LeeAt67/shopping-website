@@ -2,10 +2,19 @@ import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Star, Truck } from 'lucide-react';
 import { api } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
+import { Product } from '@/types';
 
 export default async function Home() {
-  // 获取推荐商品（前8个）
-  const featuredProducts = await api.getAllProducts(8);
+  let featuredProducts: Product[] = [];
+  
+  try {
+    // 获取推荐商品（前8个）
+    featuredProducts = await api.getAllProducts(8);
+    console.log('Featured products loaded:', featuredProducts.length);
+  } catch (error) {
+    console.error('Failed to load featured products:', error);
+    // 继续渲染页面，但不显示商品
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -60,11 +69,21 @@ export default async function Home() {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {featuredProducts && featuredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-500 mb-4">
+              <ShoppingBag className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <p className="text-lg">商品加载中...</p>
+              <p className="text-sm">请稍后刷新页面</p>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

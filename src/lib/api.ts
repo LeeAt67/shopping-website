@@ -80,10 +80,17 @@ export const api = {
   async getProductById(id: number): Promise<Product> {
     try {
       const response = await fetchWithRetry(`${BASE_URL}/products/${id}`);
-      return response.json();
+      const data = await response.json();
+      
+      // 验证返回的数据结构
+      if (!data || !data.id || !data.title || !data.rating) {
+        throw new Error('Invalid product data structure');
+      }
+      
+      return data;
     } catch (error) {
       console.error('Failed to fetch product:', error);
-      return {} as Product;
+      throw error; // 抛出错误而不是返回空对象
     }
   },
 };

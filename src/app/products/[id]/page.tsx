@@ -13,17 +13,33 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const { id } = await params;
   
   try {
-    const product = await api.getProductById(parseInt(id));
+    const productId = parseInt(id);
+    if (isNaN(productId) || productId <= 0) {
+      return {
+        title: '商品未找到 - 购物商城',
+      };
+    }
+    
+    const product = await api.getProductById(productId);
+    
+    // 验证产品数据完整性
+    if (!product || !product.title || !product.description) {
+      return {
+        title: '商品未找到 - 购物商城',
+      };
+    }
+    
     return {
       title: `${product.title} - 购物商城`,
       description: product.description,
       openGraph: {
         title: product.title,
         description: product.description,
-        images: [product.image],
+        images: product.image ? [product.image] : [],
       },
     };
-  } catch {
+  } catch (error) {
+    console.error('Error generating metadata:', error);
     return {
       title: '商品未找到 - 购物商城',
     };
@@ -33,10 +49,23 @@ export async function generateMetadata({ params }: ProductPageProps) {
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
   
+  // 验证ID是否为有效数字
+  const productId = parseInt(id);
+  if (isNaN(productId) || productId <= 0) {
+    notFound();
+  }
+  
   let product;
   try {
-    product = await api.getProductById(parseInt(id));
-  } catch {
+    product = await api.getProductById(productId);
+    
+    // 额外验证产品数据的完整性
+    if (!product || !product.id || !product.title || !product.rating || typeof product.rating.rate !== 'number') {
+      console.error('Invalid product data:', product);
+      notFound();
+    }
+  } catch (error) {
+    console.error('Error fetching product:', error);
     notFound();
   }
 
@@ -55,8 +84,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* 商品图片 */}
         <div className="aspect-square">
           <LazyImage
-            src={product.image}
-            alt={product.title}
+            src={product.image || '/placeholder-image.svg'}
+            alt={product.title || '商品图片'}
             width={500}
             height={500}
             className="w-full h-full object-contain bg-white rounded-lg shadow-md p-8"
@@ -82,7 +111,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <Star
                   key={i}
                   className={`h-5 w-5 ${
-                    i < Math.floor(product.rating.rate)
+                    i < Math.floor(product.rating?.rate || 0)
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
                   }`}
@@ -90,13 +119,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
               ))}
             </div>
             <span className="text-gray-600">
-              {product.rating.rate} ({product.rating.count} 评价)
+              {product.rating?.rate || 0} ({product.rating?.count || 0} 评价)
             </span>
           </div>
 
           {/* 价格 */}
           <div className="text-4xl font-bold text-blue-600">
-            ¥{product.price.toFixed(2)}
+            ¥{(product.price || 0).toFixed(2)}
           </div>
 
           {/* 商品描述 */}
@@ -135,11 +164,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-600">商品评分:</dt>
-                    <dd>{product.rating.rate}/5.0</dd>
+                    <dd>{product.rating?.rate || 0}/5.0</dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-600">评价数量:</dt>
-                    <dd>{product.rating.count} 条</dd>
+                    <dd>{product.rating?.count || 0} 条</dd>
                   </div>
                 </dl>
               </div>
